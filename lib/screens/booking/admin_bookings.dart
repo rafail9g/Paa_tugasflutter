@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:paa_gacor/models/booking.dart';
 import 'package:paa_gacor/services/booking_service.dart';
+import 'package:paa_gacor/services/payment_service.dart';
 import 'package:paa_gacor/widgets/loading_indicator.dart';
 import 'package:paa_gacor/widgets/status_badge.dart';
 
@@ -15,8 +16,16 @@ class AdminBookingsScreen extends StatefulWidget {
 class _AdminBookingsScreenState extends State<AdminBookingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _tabs = const ['Semua', 'Pending', 'Konfirmasi', 'Aktif', 'Selesai', 'Batal'];
-  final _statuses = [null, 'pending', 'confirmed', 'active', 'completed', 'cancelled'];
+
+  final _tabs = const [
+    'Semua',
+    'Pending',
+    'Konfirmasi',
+    'Selesai',
+    'Batal',
+  ];
+  final _statuses = [null, 'pending', 'confirmed', 'completed', 'cancelled'];
+
   List<BookingModel> _bookings = [];
   bool _isLoading = true;
   String _error = '';
@@ -32,13 +41,17 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
   }
 
   Future<void> _fetchBookings() async {
-    setState(() { _isLoading = true; _error = ''; });
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
     try {
       final status = _statuses[_tabController.index];
       final bookings = await BookingService.getAllBookings(status: status);
       if (mounted) setState(() => _bookings = bookings);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      if (mounted)
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -51,8 +64,11 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
   }
 
   String _fmt(double price) =>
-      NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(price);
-  String _fmtDate(DateTime d) => DateFormat('dd MMM yyyy', 'id_ID').format(d);
+      NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
+          .format(price);
+
+  String _fmtDate(DateTime d) =>
+      DateFormat('dd MMM yyyy', 'id_ID').format(d);
 
   @override
   Widget build(BuildContext context) {
@@ -69,30 +85,42 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
           tabAlignment: TabAlignment.start,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          labelStyle:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           tabs: _tabs.map((t) => Tab(text: t)).toList(),
         ),
       ),
       body: _isLoading
           ? const LoadingIndicator(message: 'Memuat pesanan...')
           : _error.isNotEmpty
-              ? Center(child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(_error, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    ElevatedButton(onPressed: _fetchBookings, child: const Text('Coba Lagi')),
-                  ],
-                ))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_error,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                          onPressed: _fetchBookings,
+                          child: const Text('Coba Lagi')),
+                    ],
+                  ),
+                )
               : _bookings.isEmpty
-                  ? Center(child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.inbox, size: 64, color: Colors.grey.shade300),
-                        const SizedBox(height: 12),
-                        Text('Tidak ada pesanan', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
-                      ],
-                    ))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox,
+                              size: 64, color: Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text('Tidak ada pesanan',
+                              style: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _fetchBookings,
                       child: ListView.builder(
@@ -110,23 +138,33 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A2E).withOpacity(0.04),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   '#${b.id?.substring(b.id!.length > 6 ? b.id!.length - 6 : 0).toUpperCase() ?? '-'}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      letterSpacing: 1),
                 ),
                 Row(children: [
                   StatusBadge.booking(b.status),
@@ -143,43 +181,55 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Pelanggan
                 if (b.user != null) ...[
                   Row(children: [
                     const Icon(Icons.person, size: 16, color: Colors.grey),
                     const SizedBox(width: 6),
-                    Text(b.user!.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(b.user!.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
-                    Text(b.user!.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                    Flexible(
+                      child: Text(b.user!.email,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500),
+                          overflow: TextOverflow.ellipsis),
+                    ),
                   ]),
                   const SizedBox(height: 8),
                 ],
-                // Mobil
                 Row(children: [
-                  const Icon(Icons.directions_car, size: 16, color: Colors.grey),
+                  const Icon(Icons.directions_car,
+                      size: 16, color: Colors.grey),
                   const SizedBox(width: 6),
-                  Text(b.car?.name ?? '—', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(b.car?.name ?? '—',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                 ]),
                 const SizedBox(height: 4),
                 Row(children: [
                   const Icon(Icons.date_range, size: 16, color: Colors.grey),
                   const SizedBox(width: 6),
-                  Text('${_fmtDate(b.startDate)} – ${_fmtDate(b.endDate)} (${b.totalDays} hari)',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                  Flexible(
+                    child: Text(
+                        '${_fmtDate(b.startDate)} – ${_fmtDate(b.endDate)} (${b.totalDays} hari)',
+                        style: TextStyle(
+                            fontSize: 13, color: Colors.grey.shade700)),
+                  ),
                 ]),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(_fmt(b.totalPrice),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1A1A2E))),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Color(0xFF1A1A2E))),
                     if (b.paymentMethod != null)
                       Text(_methodLabel(b.paymentMethod!),
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500)),
                   ],
                 ),
-
-                // Action buttons
                 const SizedBox(height: 10),
                 _buildActionRow(b),
               ],
@@ -193,49 +243,38 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
   Widget _buildActionRow(BookingModel b) {
     final actions = <Widget>[];
 
-    // Konfirmasi pesanan (pending → confirmed)
+    // pending → konfirmasi
     if (b.status == 'pending') {
       actions.add(_actionBtn(
         'Konfirmasi',
         Icons.check_circle_outline,
         Colors.blue,
-        () => _updateStatus(b.id!, 'confirmed'),
+        () => _confirmBooking(b.id!),
       ));
     }
 
-    // Aktifkan (confirmed + sudah bayar → active)
+    // confirmed → selesai (hanya kalau sudah bayar)
     if (b.status == 'confirmed' && b.paymentStatus == 'paid') {
       actions.add(_actionBtn(
-        'Aktifkan',
-        Icons.play_circle_outline,
-        Colors.green,
-        () => _updateStatus(b.id!, 'active'),
-      ));
-    }
-
-    // Selesaikan
-    if (b.status == 'active') {
-      actions.add(_actionBtn(
-        'Selesai',
+        'Selesaikan',
         Icons.done_all,
         Colors.teal,
-        () => _updateStatus(b.id!, 'completed'),
+        () => _completeBooking(b.id!),
       ));
     }
 
-    // Verifikasi pembayaran (ada bukti, belum verified)
-    if (b.paymentStatus == 'unpaid' && b.paymentMethod != null && b.status != 'cancelled') {
+    // Verifikasi pembayaran — jika ada paymentId di booking
+    // API: PUT /api/payments/{paymentId}/verify
+    // Kita perlu paymentId, bukan bookingId
+    // Tampilkan tombol jika status masih pending & ada metode pembayaran
+    if (b.paymentStatus == 'unpaid' &&
+        b.paymentMethod != null &&
+        b.status != 'cancelled') {
       actions.add(_actionBtn(
         'Verifikasi Bayar',
         Icons.verified,
         Colors.orange,
-        () => _verifyPayment(b.id!, true),
-      ));
-      actions.add(_actionBtn(
-        'Tolak Bayar',
-        Icons.cancel_outlined,
-        Colors.red,
-        () => _verifyPayment(b.id!, false),
+        () => _showVerifyPaymentDialog(b),
       ));
     }
 
@@ -245,16 +284,16 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
         'Batalkan',
         Icons.block,
         Colors.red.shade300,
-        () => _updateStatus(b.id!, 'cancelled'),
+        () => _cancelBooking(b.id!),
       ));
     }
 
     if (actions.isEmpty) return const SizedBox();
-
     return Wrap(spacing: 8, runSpacing: 8, children: actions);
   }
 
-  Widget _actionBtn(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _actionBtn(
+      String label, IconData icon, Color color, VoidCallback onTap) {
     return OutlinedButton.icon(
       icon: Icon(icon, size: 16, color: color),
       label: Text(label, style: TextStyle(fontSize: 12, color: color)),
@@ -267,51 +306,154 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen>
     );
   }
 
-  Future<void> _updateStatus(String bookingId, String status) async {
+  // ── Actions ─────────────────────────────────────────────────────────────
+
+  Future<void> _confirmBooking(String bookingId) async {
     try {
-      await BookingService.updateBookingStatus(bookingId, status);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Status diperbarui: $status'), backgroundColor: Colors.green),
-        );
-        _fetchBookings();
-      }
+      await BookingService.confirmBooking(bookingId);
+      _showSnack('Pesanan dikonfirmasi', Colors.green);
+      _fetchBookings();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
-        );
-      }
+      _showSnack(e.toString().replaceAll('Exception: ', ''), Colors.red);
     }
   }
 
-  Future<void> _verifyPayment(String bookingId, bool isVerified) async {
+  Future<void> _completeBooking(String bookingId) async {
     try {
-      await BookingService.verifyPayment(bookingId, isVerified: isVerified);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isVerified ? 'Pembayaran diverifikasi!' : 'Pembayaran ditolak'),
-            backgroundColor: isVerified ? Colors.green : Colors.red,
-          ),
-        );
-        _fetchBookings();
-      }
+      await BookingService.completeBooking(bookingId);
+      _showSnack('Pesanan diselesaikan', Colors.teal);
+      _fetchBookings();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
-        );
-      }
+      _showSnack(e.toString().replaceAll('Exception: ', ''), Colors.red);
     }
+  }
+
+  Future<void> _cancelBooking(String bookingId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Batalkan Pesanan'),
+        content: const Text('Yakin ingin membatalkan pesanan ini?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Tidak')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Batalkan'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await BookingService.cancelBooking(bookingId);
+      _showSnack('Pesanan dibatalkan', Colors.orange);
+      _fetchBookings();
+    } catch (e) {
+      _showSnack(e.toString().replaceAll('Exception: ', ''), Colors.red);
+    }
+  }
+
+  // Verifikasi pembayaran butuh payment ID bukan booking ID
+  // Tampilkan dialog untuk input payment ID dulu
+  Future<void> _showVerifyPaymentDialog(BookingModel b) async {
+    final paymentIdController = TextEditingController();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Verifikasi Pembayaran'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Booking: #${b.id?.substring(b.id!.length > 6 ? b.id!.length - 6 : 0).toUpperCase()}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: paymentIdController,
+              decoration: const InputDecoration(
+                labelText: 'Payment ID',
+                hintText: 'Masukkan ID pembayaran',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Payment ID bisa dilihat dari detail pemesanan user atau di /api/payments',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, {
+              'paymentId': paymentIdController.text.trim(),
+              'verified': true,
+            }),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Terima',
+                style: TextStyle(color: Colors.white)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, {
+              'paymentId': paymentIdController.text.trim(),
+              'verified': false,
+            }),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child:
+                const Text('Tolak', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+    final paymentId = result['paymentId'] as String;
+    if (paymentId.isEmpty) {
+      _showSnack('Payment ID tidak boleh kosong', Colors.red);
+      return;
+    }
+
+    try {
+      await PaymentService.verifyPayment(
+        paymentId,
+        isVerified: result['verified'] as bool,
+      );
+      _showSnack(
+        result['verified'] == true
+            ? 'Pembayaran diverifikasi!'
+            : 'Pembayaran ditolak',
+        result['verified'] == true ? Colors.green : Colors.red,
+      );
+      _fetchBookings();
+    } catch (e) {
+      _showSnack(e.toString().replaceAll('Exception: ', ''), Colors.red);
+    }
+  }
+
+  void _showSnack(String msg, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color),
+    );
   }
 
   String _methodLabel(String m) {
     switch (m) {
-      case 'transfer': return 'Transfer Bank';
-      case 'cash': return 'Tunai';
-      case 'card': return 'Kartu';
-      default: return m;
+      case 'transfer_bank':
+        return 'Transfer Bank';
+      case 'cash':
+        return 'Tunai';
+      case 'card':
+        return 'Kartu';
+      default:
+        return m;
     }
   }
 }
