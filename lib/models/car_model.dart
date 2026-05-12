@@ -59,7 +59,12 @@ class CarModel {
       fuel: json['fuel'] as String? ?? 'bensin',
       mileage: (json['mileage'] as num?)?.toDouble(),
       images: json['images'] != null
-          ? List<String>.from(json['images'])
+          ? (json['images'] as List).map((e) {
+              final url = e.toString();
+              // Jika bukan URL lengkap, tambah base URL
+              if (url.startsWith('http')) return url;
+              return 'https://car-rental-api-silk.vercel.app$url';
+            }).toList()
           : [],
       features: json['features'] != null
           ? List<String>.from(json['features'])

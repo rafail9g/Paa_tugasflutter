@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:paa_gacor/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:paa_gacor/config/api_config.dart'; // Ganti Package <contoh_modul6> dengan nama Root Proyek
-import 'package:paa_gacor/models/user_model.dart'; // Ganti Package <contoh_modul6> dengan nama Root Proyek
+import 'package:paa_gacor/models/user_model.dart';
 
 class AuthService {
   static Future<void> saveTokens({
@@ -51,36 +50,72 @@ class AuthService {
 
   // ==================== AUTH ENDPOINTS ====================
 
+  /// Register — sesuai API spec:
+  /// { name, email, password, phone, address: { street, city, province, zipCode },
+  ///   drivingLicense: { number, expiryDate } }
   static Future<Map<String, dynamic>> register({
     required String name,
     required String email,
     required String password,
     required String phone,
+    String? street,
+    String? city,
+    String? province,
+    String? zipCode,
+    String? licenseNumber,
+    DateTime? licenseExpiry,
   }) async {
     final url = Uri.parse(
       '${ApiConfig.baseUrl}${ApiConfig.authPrefix}/register',
     );
 
+    // Build body sesuai struktur API
+    final Map<String, dynamic> body = {
+      'name': name,
+      'email': email,
+      'password': password,
+      'phone': phone,
+    };
+
+    // Tambahkan address jika ada salah satu field yang diisi
+    final hasAddress =
+        (street != null && street.isNotEmpty) ||
+        (city != null && city.isNotEmpty) ||
+        (province != null && province.isNotEmpty) ||
+        (zipCode != null && zipCode.isNotEmpty);
+
+    if (hasAddress) {
+      body['address'] = {
+        if (street != null && street.isNotEmpty) 'street': street,
+        if (city != null && city.isNotEmpty) 'city': city,
+        if (province != null && province.isNotEmpty) 'province': province,
+        if (zipCode != null && zipCode.isNotEmpty) 'zipCode': zipCode,
+      };
+    }
+
+    // Tambahkan drivingLicense jika ada
+    if (licenseNumber != null && licenseNumber.isNotEmpty) {
+      body['drivingLicense'] = {
+        'number': licenseNumber,
+        if (licenseExpiry != null)
+          'expiryDate': licenseExpiry.toIso8601String().substring(0, 10),
+      };
+    }
+
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'name': name,
-        'email': email,
-        'password': password,
-        'phone': phone,
-      }),
+      body: json.encode(body),
     );
 
-    final body = json.decode(response.body);
+    final responseBody = json.decode(response.body);
 
     if (response.statusCode == 201) {
-      final data = body['data'];
+      final data = responseBody['data'];
       final user = UserModel.fromJson(data['user']);
       final accessToken = data['accessToken'] as String;
       final refreshToken = data['refreshToken'] as String;
 
-      // Simpan token
       await saveTokens(
         accessToken: accessToken,
         refreshToken: refreshToken,
@@ -93,7 +128,15 @@ class AuthService {
         'refreshToken': refreshToken,
       };
     } else {
-      throw Exception(body['message'] ?? 'Registrasi gagal');
+      // Ambil pesan error yang lebih spesifik jika ada
+      String errorMsg = responseBody['message'] ?? 'Registrasi gagal';
+      if (responseBody['errors'] != null) {
+        final errors = responseBody['errors'] as List;
+        if (errors.isNotEmpty) {
+          errorMsg = errors.map((e) => e['message'] ?? e.toString()).join(', ');
+        }
+      }
+      throw Exception(errorMsg);
     }
   }
 
@@ -118,7 +161,6 @@ class AuthService {
       final accessToken = data['accessToken'] as String;
       final refreshToken = data['refreshToken'] as String;
 
-      // Simpan token
       await saveTokens(
         accessToken: accessToken,
         refreshToken: refreshToken,
@@ -135,7 +177,7 @@ class AuthService {
     }
   }
 
-  /// Ambil data profil user yang sedang login
+  /// Ambil profil user yang sedang login
   static Future<UserModel> getMe() async {
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.authPrefix}/me');
     final headers = await _authHeaders();
@@ -150,6 +192,60 @@ class AuthService {
     }
   }
 
+  /// Update profil
+  static Future<UserModel> updateProfile({
+    String? name,
+    String? phone,
+    String? street,
+    String? city,
+    String? province,
+    String? zipCode,
+    String? licenseNumber,
+    DateTime? licenseExpiry,
+  }) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/users/profile');
+    final headers = await _authHeaders();
+
+    final Map<String, dynamic> body = {};
+    if (name != null && name.isNotEmpty) body['name'] = name;
+    if (phone != null && phone.isNotEmpty) body['phone'] = phone;
+
+    final hasAddress =
+        (street != null && street.isNotEmpty) ||
+        (city != null && city.isNotEmpty) ||
+        (province != null && province.isNotEmpty) ||
+        (zipCode != null && zipCode.isNotEmpty);
+    if (hasAddress) {
+      body['address'] = {
+        if (street != null && street.isNotEmpty) 'street': street,
+        if (city != null && city.isNotEmpty) 'city': city,
+        if (province != null && province.isNotEmpty) 'province': province,
+        if (zipCode != null && zipCode.isNotEmpty) 'zipCode': zipCode,
+      };
+    }
+
+    if (licenseNumber != null && licenseNumber.isNotEmpty) {
+      body['drivingLicense'] = {
+        'number': licenseNumber,
+        if (licenseExpiry != null)
+          'expiryDate': licenseExpiry.toIso8601String().substring(0, 10),
+      };
+    }
+
+    final response = await http.put(
+      url,
+      headers: headers,
+      body: json.encode(body),
+    );
+
+    final responseBody = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return UserModel.fromJson(responseBody['data']['user']);
+    } else {
+      throw Exception(responseBody['message'] ?? 'Gagal update profil');
+    }
+  }
+
   /// Logout pengguna
   static Future<void> logout() async {
     try {
@@ -159,8 +255,33 @@ class AuthService {
       final headers = await _authHeaders();
       await http.post(url, headers: headers);
     } catch (_) {
-      // Tetap lanjut hapus token meskipun request gagal
+      // Tetap hapus token meskipun request gagal
     }
     await clearTokens();
+  }
+
+  /// Ganti password
+  static Future<void> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.authPrefix}/update-password',
+    );
+    final headers = await _authHeaders();
+
+    final response = await http.put(
+      url,
+      headers: headers,
+      body: json.encode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    final body = json.decode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(body['message'] ?? 'Gagal mengganti password');
+    }
   }
 }

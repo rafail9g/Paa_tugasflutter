@@ -9,6 +9,7 @@ import 'package:paa_gacor/screens/booking/booking_form.dart';
 import 'package:paa_gacor/screens/booking/my_booking.dart';
 import 'package:paa_gacor/screens/booking/admin_bookings.dart';
 import 'package:paa_gacor/screens/auth/login.dart';
+import 'package:paa_gacor/screens/debug/image_debug_screen.dart'; // ← debug
 
 class CarListScreen extends StatefulWidget {
   const CarListScreen({super.key});
@@ -45,7 +46,11 @@ class _CarListScreenState extends State<CarListScreen> {
       final result = await CarService.getCars(search: searchQuery);
       if (mounted) setState(() => _cars = result['cars'] as List<CarModel>);
     } catch (e) {
-      if (mounted) setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
+      if (mounted) {
+        setState(
+          () => _errorMessage = e.toString().replaceAll('Exception: ', ''),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -58,7 +63,10 @@ class _CarListScreenState extends State<CarListScreen> {
         title: const Text('Hapus Mobil'),
         content: Text('Hapus ${car.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -72,14 +80,20 @@ class _CarListScreenState extends State<CarListScreen> {
         await CarService.deleteCar(car.id!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Mobil berhasil dihapus'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Mobil berhasil dihapus'),
+              backgroundColor: Colors.green,
+            ),
           );
           _fetchCars();
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -93,7 +107,10 @@ class _CarListScreenState extends State<CarListScreen> {
         title: const Text('Logout'),
         content: const Text('Apakah Anda yakin ingin keluar?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -131,7 +148,17 @@ class _CarListScreenState extends State<CarListScreen> {
         backgroundColor: const Color(0xFF1A1A2E),
         foregroundColor: Colors.white,
         actions: [
-          // User: tombol "Pesanan Saya"
+          // ── DEBUG: cek URL gambar ──────────────────────────────
+          IconButton(
+            icon: const Icon(Icons.bug_report_outlined),
+            tooltip: 'Debug Gambar',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ImageDebugScreen()),
+            ),
+          ),
+
+          // ─────────────────────────────────────────────────────
           if (!isAdmin)
             IconButton(
               icon: const Icon(Icons.receipt_long),
@@ -141,7 +168,6 @@ class _CarListScreenState extends State<CarListScreen> {
                 MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
               ),
             ),
-          // Admin: tombol kelola pesanan
           if (isAdmin)
             IconButton(
               icon: const Icon(Icons.assignment),
@@ -188,7 +214,8 @@ class _CarListScreenState extends State<CarListScreen> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onSubmitted: (q) => _fetchCars(q.trim().isEmpty ? null : q.trim()),
+              onSubmitted: (q) =>
+                  _fetchCars(q.trim().isEmpty ? null : q.trim()),
             ),
           ),
 
@@ -197,60 +224,77 @@ class _CarListScreenState extends State<CarListScreen> {
             child: _isLoading
                 ? const LoadingIndicator(message: 'Memuat data mobil...')
                 : _errorMessage.isNotEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_errorMessage, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                            const SizedBox(height: 16),
-                            ElevatedButton(onPressed: _fetchCars, child: const Text('Coba Lagi')),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _errorMessage,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
                         ),
-                      )
-                    : _cars.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.directions_car_outlined, size: 64, color: Colors.grey.shade300),
-                                const SizedBox(height: 12),
-                                Text('Tidak ada mobil tersedia', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () => _fetchCars(),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.only(top: 8, bottom: 80),
-                              itemCount: _cars.length,
-                              itemBuilder: (context, index) {
-                                final car = _cars[index];
-                                return CarCard(
-                                  car: car,
-                                  // Tombol "Pesan" untuk USER pada mobil yang tersedia
-                                  onBook: !isAdmin && car.isAvailable
-                                      ? () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => BookingFormScreen(car: car),
-                                            ),
-                                          )
-                                      : null,
-                                  // Edit & Delete hanya untuk ADMIN
-                                  onEdit: isAdmin
-                                      ? () async {
-                                          final result = await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (_) => CarFormScreen(car: car)),
-                                          );
-                                          if (result == true) _fetchCars();
-                                        }
-                                      : null,
-                                  onDelete: isAdmin ? () => _deleteCar(car) : null,
-                                );
-                              },
-                            ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _fetchCars,
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _cars.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.directions_car_outlined,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Tidak ada mobil tersedia',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 16,
                           ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => _fetchCars(),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(top: 8, bottom: 80),
+                      itemCount: _cars.length,
+                      itemBuilder: (context, index) {
+                        final car = _cars[index];
+                        return CarCard(
+                          car: car,
+                          onBook: !isAdmin && car.isAvailable
+                              ? () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BookingFormScreen(car: car),
+                                  ),
+                                )
+                              : null,
+                          onEdit: isAdmin
+                              ? () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CarFormScreen(car: car),
+                                    ),
+                                  );
+                                  if (result == true) _fetchCars();
+                                }
+                              : null,
+                          onDelete: isAdmin ? () => _deleteCar(car) : null,
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -265,7 +309,10 @@ class _CarListScreenState extends State<CarListScreen> {
               },
               backgroundColor: const Color(0xFF1A1A2E),
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Tambah Mobil', style: TextStyle(color: Colors.white)),
+              label: const Text(
+                'Tambah Mobil',
+                style: TextStyle(color: Colors.white),
+              ),
             )
           : null,
     );
