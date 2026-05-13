@@ -9,7 +9,6 @@ import 'package:paa_gacor/screens/booking/booking_form.dart';
 import 'package:paa_gacor/screens/booking/my_booking.dart';
 import 'package:paa_gacor/screens/booking/admin_bookings.dart';
 import 'package:paa_gacor/screens/auth/login.dart';
-import 'package:paa_gacor/screens/debug/image_debug_screen.dart'; // ← debug
 
 class CarListScreen extends StatefulWidget {
   const CarListScreen({super.key});
@@ -148,17 +147,6 @@ class _CarListScreenState extends State<CarListScreen> {
         backgroundColor: const Color(0xFF1A1A2E),
         foregroundColor: Colors.white,
         actions: [
-          // ── DEBUG: cek URL gambar ──────────────────────────────
-          IconButton(
-            icon: const Icon(Icons.bug_report_outlined),
-            tooltip: 'Debug Gambar',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ImageDebugScreen()),
-            ),
-          ),
-
-          // ─────────────────────────────────────────────────────
           if (!isAdmin)
             IconButton(
               icon: const Icon(Icons.receipt_long),

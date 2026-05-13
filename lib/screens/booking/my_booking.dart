@@ -56,10 +56,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       final bookings = await BookingService.getMyBookings(status: status);
       if (mounted) setState(() => _bookings = bookings);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _errorMessage = e.toString().replaceAll('Exception: ', ''),
         );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -147,7 +148,35 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     );
   }
 
+  /// Label info singkat di bawah harga untuk memberi konteks status bayar
+  String _paymentHint(BookingModel booking) {
+    switch (booking.paymentStatus) {
+      case 'unpaid':
+        return '⚠ Belum bayar';
+      case 'pending':
+        return '🕐 Menunggu verifikasi';
+      case 'paid':
+        return '✓ Pembayaran terverifikasi';
+      default:
+        return '';
+    }
+  }
+
+  Color _paymentHintColor(String paymentStatus) {
+    switch (paymentStatus) {
+      case 'unpaid':
+        return Colors.red.shade600;
+      case 'pending':
+        return Colors.amber.shade800;
+      case 'paid':
+        return Colors.green.shade700;
+      default:
+        return Colors.grey.shade500;
+    }
+  }
+
   Widget _buildBookingCard(BookingModel booking) {
+    final hint = _paymentHint(booking);
     return GestureDetector(
       onTap: () async {
         await Navigator.push(
@@ -156,6 +185,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             builder: (ctx) => BookingDetailScreen(bookingId: booking.id!),
           ),
         );
+        // Refresh list setelah kembali (status mungkin berubah)
         _fetchBookings();
       },
       child: Container(
@@ -261,6 +291,17 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                             color: Color(0xFF1A1A2E),
                           ),
                         ),
+                        if (hint.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            hint,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _paymentHintColor(booking.paymentStatus),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

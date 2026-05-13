@@ -36,6 +36,10 @@ class StatusBadge extends StatelessWidget {
       case 'unpaid':
         label = 'Belum Bayar';
         break;
+      case 'pending':
+        // Payment sudah dikirim user, menunggu verifikasi admin
+        label = 'Menunggu Verifikasi';
+        break;
       case 'paid':
         label = 'Sudah Bayar';
         break;
@@ -62,6 +66,9 @@ class StatusBadge extends StatelessWidget {
         return Colors.red.shade50;
       case 'payment_unpaid':
         return Colors.red.shade50;
+      case 'payment_pending':
+        // Sudah kirim bukti, menunggu verifikasi — warna kuning/amber
+        return Colors.amber.shade50;
       case 'payment_paid':
         return Colors.green.shade50;
       case 'payment_refunded':
@@ -85,6 +92,8 @@ class StatusBadge extends StatelessWidget {
         return Colors.red.shade700;
       case 'payment_unpaid':
         return Colors.red.shade700;
+      case 'payment_pending':
+        return Colors.amber.shade800;
       case 'payment_paid':
         return Colors.green.shade700;
       case 'payment_refunded':
