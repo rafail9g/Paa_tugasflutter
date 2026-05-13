@@ -5,7 +5,6 @@ class PaymentModel {
   final double amount;
   final String method; // transfer, cash, card
   final String status; // pending, verified, rejected
-  final String? proofUrl;
   final String? notes;
   final String? adminNotes;
   final DateTime? verifiedAt;
@@ -18,7 +17,6 @@ class PaymentModel {
     required this.amount,
     required this.method,
     this.status = 'pending',
-    this.proofUrl,
     this.notes,
     this.adminNotes,
     this.verifiedAt,
@@ -35,7 +33,6 @@ class PaymentModel {
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       method: json['method'] as String? ?? 'transfer',
       status: json['status'] as String? ?? 'pending',
-      proofUrl: json['proofUrl'] as String?,
       notes: json['notes'] as String?,
       adminNotes: json['adminNotes'] as String?,
       verifiedAt: json['verifiedAt'] != null
@@ -52,7 +49,6 @@ class PaymentModel {
       'amount': amount,
       'method': method,
       if (notes != null) 'notes': notes,
-      if (proofUrl != null) 'proofUrl': proofUrl,
     };
   }
 
